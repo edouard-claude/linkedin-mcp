@@ -4,3 +4,4 @@ bin/
 *.db-wal
 .env*
 !.env.example
+deploy.tar
