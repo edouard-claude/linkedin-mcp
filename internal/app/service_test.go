@@ -16,7 +16,8 @@ func newHarness(t *testing.T) (*Service, *fakeStore, *fakeAPI, *fakeClock) {
 	t.Helper()
 	store, api, clk := newFakeStore(), newFakeAPI(), newFakeClock()
 	store.seedTenant("tenant-a", "member-a",
-		config.ScopeWritePosts, config.ScopeWriteFeed, config.ScopeAnalytics)
+		config.ScopeWritePosts, config.ScopeWriteFeed, config.ScopeReadPosts,
+		config.ScopeAnalytics)
 	store.seedTenant("tenant-b", "member-b", "openid", "profile")
 	svc := NewService(store, api, clk, "https://li.example.re",
 		[]string{"openid", config.ScopeWritePosts, config.ScopeWriteFeed})
@@ -95,7 +96,7 @@ func TestPublishValidation(t *testing.T) {
 // message that names the permission, rather than passing a doomed request to
 // LinkedIn and relaying a bare 403.
 func TestScopeGatingExplainsItself(t *testing.T) {
-	svc, _, api, _ := newHarness(t)
+	svc, store, api, _ := newHarness(t)
 
 	_, err := svc.PublishPost(t.Context(), "tenant-b", PublishInput{Commentary: "x", Confirm: true})
 	var scopeErr *domain.ErrScopeMissing
@@ -111,6 +112,42 @@ func TestScopeGatingExplainsItself(t *testing.T) {
 	}
 	if api.called("CreatePost") || api.called("CreateComment") || api.called("PostAnalytics") {
 		t.Fatal("LinkedIn appelé sans la permission")
+	}
+
+	// The day-one account: w_member_social publishes, and nothing else. The
+	// live API answers 403 on the rest, so the server must say so first, and
+	// name the permission rather than relay an opaque refusal.
+	store.seedTenant("tenant-jour1", "member-jour1", config.ScopeWritePosts)
+	if _, err := svc.PublishPost(t.Context(), "tenant-jour1",
+		PublishInput{Commentary: "ça marche", Confirm: true}); err != nil {
+		t.Fatalf("publication refusée à un compte qui en a le droit: %v", err)
+	}
+	for name, run := range map[string]func() error{
+		"engagement": func() error { _, e := svc.PostEngagement(t.Context(), "tenant-jour1", "urn:li:share:1"); return e },
+		"commentaires": func() error {
+			_, e := svc.PostComments(t.Context(), "tenant-jour1", CommentsInput{ObjectURN: "urn:li:share:1"})
+			return e
+		},
+		"commenter": func() error {
+			_, e := svc.PublishComment(t.Context(), "tenant-jour1",
+				CommentInput{ObjectURN: "urn:li:share:1", Message: "x", Confirm: true})
+			return e
+		},
+		"reagir": func() error {
+			_, e := svc.React(t.Context(), "tenant-jour1",
+				ReactInput{ObjectURN: "urn:li:share:1", Confirm: true})
+			return e
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			err := run()
+			if !errors.As(err, &scopeErr) {
+				t.Fatalf("erreur = %v", err)
+			}
+			if !strings.Contains(scopeErr.Error(), "Community Management") {
+				t.Fatalf("la voie de sortie n'est pas expliquée: %v", scopeErr)
+			}
+		})
 	}
 }
 
@@ -192,13 +229,15 @@ func TestEditAndDeleteLifecycle(t *testing.T) {
 // TestListPostsFallsBackToTheLedger covers the permission LinkedIn withholds:
 // without r_member_social the listing comes from what we published, and says so.
 func TestListPostsFallsBackToTheLedger(t *testing.T) {
-	svc, _, api, _ := newHarness(t)
-	if _, err := svc.PublishPost(t.Context(), "tenant-a",
+	svc, store, api, _ := newHarness(t)
+	// Only the self-serve write scope: the case every account starts in.
+	store.seedTenant("tenant-w", "member-w", config.ScopeWritePosts)
+	if _, err := svc.PublishPost(t.Context(), "tenant-w",
 		PublishInput{Commentary: "a", Confirm: true}); err != nil {
 		t.Fatalf("PublishPost: %v", err)
 	}
 
-	out, err := svc.ListPosts(t.Context(), "tenant-a", ListPostsInput{})
+	out, err := svc.ListPosts(t.Context(), "tenant-w", ListPostsInput{})
 	if err != nil {
 		t.Fatalf("ListPosts: %v", err)
 	}
@@ -345,7 +384,8 @@ func TestConnectionStatusSpellsOutCapabilities(t *testing.T) {
 	if !status.Healthy || status.DaysRemaining != 40 {
 		t.Fatalf("statut = %+v", status)
 	}
-	if !status.Capabilities["publier"] || status.Capabilities["lire_ses_publications"] {
+	if !status.Capabilities["publier"] || status.Capabilities["lire_ses_publications"] ||
+		status.Capabilities["lire_engagement"] {
 		t.Fatalf("capacités = %+v", status.Capabilities)
 	}
 	// The 60 day ceiling is the thing users trip over, so the summary says it.

@@ -29,13 +29,26 @@ type PostEngagement struct {
 	Notice        string `json:"notice,omitempty"`
 }
 
+// engagementWhy and feedWriteWhy explain a refusal in the terms the member
+// can act on: both permissions come from the same LinkedIn review, and no
+// amount of reconnecting grants them before it is approved.
+const (
+	engagementWhy = "la lecture des réactions et commentaires passe par r_member_social, accordée via le formulaire Community Management de LinkedIn"
+	feedWriteWhy  = "commenter et réagir passe par w_member_social_feed, accordée via le formulaire Community Management de LinkedIn ; publier, modifier et supprimer restent disponibles"
+)
+
 // PostEngagement reads the like and comment counters of a post.
 //
-// This is the poor man's analytics: it needs no restricted permission, and it
-// already answers "how is my post doing" for most people.
+// The socialActions endpoint is gated behind r_member_social even for a
+// member's own post: w_member_social buys the right to publish, not the right
+// to read back what the publication collected. Tested against the live API,
+// which answers 403 rather than an empty count.
 func (s *Service) PostEngagement(ctx context.Context, tenantID, postURN string) (*PostEngagement, error) {
 	tenant, err := s.tenant(ctx, tenantID)
 	if err != nil {
+		return nil, err
+	}
+	if err := requireScope(tenant, config.ScopeReadPosts, engagementWhy); err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(postURN) == "" {
@@ -72,6 +85,9 @@ func (s *Service) PostComments(ctx context.Context, tenantID string, in Comments
 	if err != nil {
 		return nil, err
 	}
+	if err := requireScope(tenant, config.ScopeReadPosts, engagementWhy); err != nil {
+		return nil, err
+	}
 	if strings.TrimSpace(in.ObjectURN) == "" {
 		return nil, errors.New("object_urn est obligatoire")
 	}
@@ -104,8 +120,7 @@ func (s *Service) PublishComment(ctx context.Context, tenantID string, in Commen
 	if err != nil {
 		return nil, err
 	}
-	if err := requireScope(tenant, config.ScopeWritePosts,
-		"reconnectez-vous pour accorder les commentaires et réactions"); err != nil {
+	if err := requireScope(tenant, config.ScopeWriteFeed, feedWriteWhy); err != nil {
 		return nil, err
 	}
 	message := strings.TrimSpace(in.Message)
@@ -159,7 +174,7 @@ func (s *Service) DeleteComment(ctx context.Context, tenantID string, in DeleteC
 	if err != nil {
 		return nil, err
 	}
-	if err := requireScope(tenant, config.ScopeWritePosts, ""); err != nil {
+	if err := requireScope(tenant, config.ScopeWriteFeed, feedWriteWhy); err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(in.ObjectURN) == "" || strings.TrimSpace(in.CommentID) == "" {
@@ -203,7 +218,7 @@ func (s *Service) React(ctx context.Context, tenantID string, in ReactInput) (*R
 	if err != nil {
 		return nil, err
 	}
-	if err := requireScope(tenant, config.ScopeWritePosts, ""); err != nil {
+	if err := requireScope(tenant, config.ScopeWriteFeed, feedWriteWhy); err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(in.ObjectURN) == "" {

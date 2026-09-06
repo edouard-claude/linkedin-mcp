@@ -31,14 +31,14 @@ func (d *deps) registerWriteTools(srv *mcp.Server) {
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "publish_comment",
 		Title:       "Commenter",
-		Description: "Commente une publication, ou répond à un commentaire en passant parent_comment_urn." + confirmDoc,
+		Description: "Commente une publication, ou répond à un commentaire en passant parent_comment_urn. Demande w_member_social_feed, que w_member_social ne couvre pas." + confirmDoc,
 		Annotations: writing(),
 	}, d.toolPublishComment)
 
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "react",
 		Title:       "Réagir",
-		Description: "Ajoute ou retire une réaction sur une publication ou un commentaire." + confirmDoc,
+		Description: "Ajoute ou retire une réaction sur une publication ou un commentaire. Demande w_member_social_feed, que w_member_social ne couvre pas." + confirmDoc,
 		Annotations: writing(),
 	}, d.toolReact)
 
@@ -52,7 +52,7 @@ func (d *deps) registerWriteTools(srv *mcp.Server) {
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "delete_comment",
 		Title:       "Supprimer un commentaire",
-		Description: "Supprime définitivement un commentaire de l'utilisateur." + confirmDoc,
+		Description: "Supprime définitivement un commentaire de l'utilisateur. Demande w_member_social_feed." + confirmDoc,
 		Annotations: destructive(),
 	}, d.toolDeleteComment)
 }

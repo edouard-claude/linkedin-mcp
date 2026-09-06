@@ -28,14 +28,14 @@ func (d *deps) registerReadTools(srv *mcp.Server) {
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "post_engagement",
 		Title:       "Engagement d'une publication",
-		Description: "Nombre de réactions et de commentaires d'une publication, et si l'utilisateur l'a lui-même likée. Ne demande aucune permission restreinte : c'est la mesure disponible par défaut.",
+		Description: "Nombre de réactions et de commentaires d'une publication, et si l'utilisateur l'a lui-même likée. Demande r_member_social : LinkedIn ferme la lecture de l'engagement même sur ses propres publications.",
 		Annotations: readOnly(),
 	}, d.toolPostEngagement)
 
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "post_comments",
 		Title:       "Commentaires d'une publication",
-		Description: "Commentaires laissés sur une publication. Passez l'URN d'un commentaire au lieu de celle d'une publication pour obtenir ses réponses.",
+		Description: "Commentaires laissés sur une publication. Passez l'URN d'un commentaire au lieu de celle d'une publication pour obtenir ses réponses. Demande r_member_social.",
 		Annotations: readOnly(),
 	}, d.toolPostComments)
 

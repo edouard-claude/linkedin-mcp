@@ -132,11 +132,15 @@ must be verified by one of its admins before the app can request anything.
 3. **Request the products.** Tab *Products*:
    - **Sign In with LinkedIn using OpenID Connect** grants `openid profile email`,
      which is how the server learns who is connecting. Instant.
-   - **Share on LinkedIn** grants `w_member_social`, which covers posts, comments
-     and reactions on the member's own content. Instant.
-   - **Community Management API** grants the read and analytics permissions
-     (`r_member_social`, `r_member_postAnalytics`). It goes through a review form and is
-     not granted to everyone. The server runs fine without it, and says so in
+   - **Share on LinkedIn** grants `w_member_social`: creating, editing and deleting
+     the member's own posts. Instant, and it is the whole of what a self-serve app
+     can do. Commenting, reacting and reading back engagement are **not** in it,
+     whatever the consent screen's wording suggests.
+   - **Community Management API** grants everything else: `r_member_social` (list
+     posts, read reactions and comments), `w_member_social_feed` (comment, react),
+     `r_member_postAnalytics` (statistics). It goes through a review form and is not
+     granted to everyone. The server runs fine without it, refuses those tools up
+     front with the permission named, and spells the whole thing out in
      `connection_status`.
 4. **Declare the redirect URL.** Tab *Auth* > *OAuth 2.0 settings* > *Redirect URLs*:
 
@@ -149,6 +153,25 @@ must be verified by one of its admins before the app can request anything.
 
 Keep the Page association in mind: LinkedIn ties the app's rate limits and its review
 to that page, not to your personal account.
+
+## What works on day one
+
+Two self-serve products are granted instantly. Everything else sits behind the
+Community Management review, and the table below is what the live API actually
+answers, not what the consent screens imply.
+
+| | Permission | Granted instantly | Tools |
+|---|---|:---:|---|
+| Sign in, identity | `openid profile email` | yes | `connection_status` |
+| Publish, edit, delete | `w_member_social` | yes | `publish_post`, `edit_post`, `delete_post`, `list_posts` (ledger) |
+| Read own posts | `r_member_social` | no | `list_posts` (from LinkedIn) |
+| Read engagement | `r_member_social` | no | `post_engagement`, `post_comments` |
+| Comment, react | `w_member_social_feed` | no | `publish_comment`, `delete_comment`, `react` |
+| Statistics | `r_member_postAnalytics` | no | `post_analytics`, `account_analytics` |
+
+A tool whose permission is missing refuses **before** calling LinkedIn and names
+the permission, instead of relaying a bare 403. `connection_status` answers the
+same question in one call, in plain language.
 
 ## Configure
 
@@ -279,8 +302,8 @@ is asked to work in; the code and this README are in English.
 |---|---|
 | `connection_status` | Is the authorization still good, when does it expire, and what is this account allowed to do. Call it first, and after any failure. |
 | `list_posts` | The account's posts, newest first. Falls back to the ledger while `r_member_social` is not granted, and says so in `source` and `notice`. |
-| `post_engagement` | Reactions and comments on a post, and whether the member liked it. Needs no restricted permission. |
-| `post_comments` | Comments on a post. Pass a comment URN instead to read its replies. |
+| `post_engagement` | Reactions and comments on a post, and whether the member liked it. Needs `r_member_social`. |
+| `post_comments` | Comments on a post. Pass a comment URN instead to read its replies. Needs `r_member_social`. |
 | `post_analytics` | Impressions, members reached, reactions, comments, reshares, saves, sends, clicks, followers gained, profile views. Needs `r_member_postAnalytics`. |
 | `account_analytics` | Same metrics aggregated over every post of the account. |
 | `reconnect_url` | The link to open to reauthorize LinkedIn. |
@@ -297,10 +320,10 @@ whole call.
 |---|---|
 | `publish_post` | Text, link share, or reshare of an existing post. |
 | `edit_post` | Rewrites the text. LinkedIn only allows the text: the link and the media stay, and the post is flagged as edited. |
-| `publish_comment` | Comments a post, or replies to a comment via `parent_comment_urn`. |
-| `react` | Adds or removes a reaction. |
+| `publish_comment` | Comments a post, or replies to a comment via `parent_comment_urn`. Needs `w_member_social_feed`. |
+| `react` | Adds or removes a reaction. Needs `w_member_social_feed`. |
 | `delete_post` | Permanently deletes a post, its reactions and its comments. |
-| `delete_comment` | Permanently deletes one of the member's comments. |
+| `delete_comment` | Permanently deletes one of the member's comments. Needs `w_member_social_feed`. |
 
 Every one of them returns a **preview** unless called with `confirm=true`, and the two
 deletions are annotated `destructiveHint` so a client can warn before running them.
