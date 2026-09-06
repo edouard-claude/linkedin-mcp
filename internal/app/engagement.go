@@ -104,7 +104,7 @@ func (s *Service) PublishComment(ctx context.Context, tenantID string, in Commen
 	if err != nil {
 		return nil, err
 	}
-	if err := requireScope(tenant, config.ScopeWriteFeed,
+	if err := requireScope(tenant, config.ScopeWritePosts,
 		"reconnectez-vous pour accorder les commentaires et réactions"); err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func (s *Service) DeleteComment(ctx context.Context, tenantID string, in DeleteC
 	if err != nil {
 		return nil, err
 	}
-	if err := requireScope(tenant, config.ScopeWriteFeed, ""); err != nil {
+	if err := requireScope(tenant, config.ScopeWritePosts, ""); err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(in.ObjectURN) == "" || strings.TrimSpace(in.CommentID) == "" {
@@ -203,7 +203,7 @@ func (s *Service) React(ctx context.Context, tenantID string, in ReactInput) (*R
 	if err != nil {
 		return nil, err
 	}
-	if err := requireScope(tenant, config.ScopeWriteFeed, ""); err != nil {
+	if err := requireScope(tenant, config.ScopeWritePosts, ""); err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(in.ObjectURN) == "" {

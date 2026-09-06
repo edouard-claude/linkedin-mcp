@@ -50,12 +50,13 @@ const (
 	// DefaultScopes is what the login dialog asks for.
 	//
 	// openid, profile and email identify the member. w_member_social covers
-	// creating, editing and deleting posts. w_member_social_feed covers
-	// comments and reactions, which LinkedIn gates separately.
-	// r_member_postAnalytics is the analytics scope, only usable once the
-	// Community Management access form has been approved: leave it out of
-	// LINKEDIN_SCOPES until then, or every login fails with "invalid scope".
-	DefaultScopes = "openid profile email w_member_social w_member_social_feed"
+	// posts, comments and reactions alike: that is what the consent screen
+	// itself says, and it is the only write scope the self-serve products
+	// grant. Every other scope below is restricted, and asking for one the
+	// app was not granted fails the whole authorization, so they stay out of
+	// the default: add them to LINKEDIN_SCOPES the day LinkedIn approves the
+	// Community Management access form.
+	DefaultScopes = "openid profile email w_member_social"
 
 	// ScopeAnalytics reads member post statistics. Restricted.
 	ScopeAnalytics = "r_member_postAnalytics"
@@ -63,9 +64,12 @@ const (
 	ScopeReadPosts = "r_member_social"
 	// ScopeReadFeed reads comments and likes. Restricted.
 	ScopeReadFeed = "r_member_social_feed"
-	// ScopeWritePosts creates, edits and deletes posts.
+	// ScopeWritePosts creates, edits and deletes posts, comments and
+	// reactions. Granted by the self-serve "Share on LinkedIn" product.
 	ScopeWritePosts = "w_member_social"
-	// ScopeWriteFeed creates comments and reactions.
+	// ScopeWriteFeed widens the writes to other members' posts. Restricted,
+	// and not required for anything this server does on the member's own
+	// content.
 	ScopeWriteFeed = "w_member_social_feed"
 
 	// cipherKeyLen is the AES-256 key size.

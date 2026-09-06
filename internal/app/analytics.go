@@ -213,7 +213,7 @@ func (s *Service) ConnectionStatus(ctx context.Context, tenantID string) (*Conne
 	// language answer and the scope list can never contradict each other.
 	status.Capabilities = map[string]bool{
 		"publier":               slices.Contains(granted, config.ScopeWritePosts),
-		"commenter_et_reagir":   slices.Contains(granted, config.ScopeWriteFeed),
+		"commenter_et_reagir":   slices.Contains(granted, config.ScopeWritePosts),
 		"lire_ses_publications": slices.Contains(granted, config.ScopeReadPosts),
 		"statistiques":          slices.Contains(granted, config.ScopeAnalytics),
 	}

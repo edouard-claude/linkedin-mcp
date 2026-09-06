@@ -132,7 +132,8 @@ must be verified by one of its admins before the app can request anything.
 3. **Request the products.** Tab *Products*:
    - **Sign In with LinkedIn using OpenID Connect** grants `openid profile email`,
      which is how the server learns who is connecting. Instant.
-   - **Share on LinkedIn** grants `w_member_social`, which is publishing. Instant.
+   - **Share on LinkedIn** grants `w_member_social`, which covers posts, comments
+     and reactions on the member's own content. Instant.
    - **Community Management API** grants the read and analytics permissions
      (`r_member_social`, `r_member_postAnalytics`). It goes through a review form and is
      not granted to everyone. The server runs fine without it, and says so in
@@ -161,7 +162,7 @@ Everything is environment variables, no configuration file.
 | `TOKEN_CIPHER_KEY` | yes | | 32 bytes, base64. Encrypts the LinkedIn tokens at rest (AES-256-GCM). |
 | `JWT_SIGNING_KEY` | yes | | 32 bytes, base64. Signs the access tokens this server issues. |
 | `LINKEDIN_API_VERSION` | no | `202606` | `LinkedIn-Version` header, `YYYYMM`. LinkedIn keeps a version usable for about a year. |
-| `LINKEDIN_SCOPES` | no | `openid profile email w_member_social w_member_social_feed` | What the member is asked to grant. Add `r_member_social r_member_postAnalytics` once Community Management is approved. |
+| `LINKEDIN_SCOPES` | no | `openid profile email w_member_social` | What the member is asked to grant. Add `r_member_social r_member_postAnalytics` once Community Management is approved. Asking for a scope the app was not granted fails the whole authorization. |
 | `ALLOWED_MEMBER_IDS` | no | *(everyone)* | Comma-separated LinkedIn member ids. Set it to keep the server to yourself and your friends. |
 | `DB_PATH` | no | `/data/linkedin.db` | SQLite file. Put it on a persistent volume. |
 | `LISTEN_ADDR` | no | `:8080` | |
