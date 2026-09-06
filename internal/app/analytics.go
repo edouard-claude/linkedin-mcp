@@ -165,9 +165,13 @@ type ConnectionStatus struct {
 	GrantedScopes []string `json:"granted_scopes,omitempty"`
 	MissingScopes []string `json:"missing_scopes,omitempty"`
 	// Capabilities says in plain terms what the member can and cannot do.
-	Capabilities    map[string]bool `json:"capabilities"`
-	PostsRecorded   int             `json:"posts_recorded"`
-	ReconnectionURL string          `json:"reconnect_url,omitempty"`
+	Capabilities map[string]bool `json:"capabilities"`
+	// PostsRecorded counts the live posts in the ledger, and PostsDeleted the
+	// tombstones. Reporting one number for both made connection_status
+	// disagree with list_posts, which shows the live ones only.
+	PostsRecorded   int    `json:"posts_recorded"`
+	PostsDeleted    int    `json:"posts_deleted,omitempty"`
+	ReconnectionURL string `json:"reconnect_url,omitempty"`
 }
 
 // ConnectionStatus asks LinkedIn whether the authorization still holds, and
@@ -186,7 +190,8 @@ func (s *Service) ConnectionStatus(ctx context.Context, tenantID string) (*Conne
 		DisplayName:   tenant.DisplayName,
 		MemberURN:     tenant.MemberURN(),
 		GrantedScopes: tenant.Scopes,
-		PostsRecorded: len(ledger),
+		PostsRecorded: countLive(ledger),
+		PostsDeleted:  len(ledger) - countLive(ledger),
 	}
 	expiry := tenant.TokenExpiresAt
 	introspection, err := s.api.IntrospectToken(ctx, tenant.AccessToken)
@@ -251,4 +256,16 @@ func (s *Service) ConnectionStatus(ctx context.Context, tenantID string) (*Conne
 		}
 	}
 	return status, nil
+}
+
+// countLive counts the ledger entries that were not deleted through this
+// server.
+func countLive(posts []domain.LedgerPost) int {
+	n := 0
+	for i := range posts {
+		if !posts[i].Deleted() {
+			n++
+		}
+	}
+	return n
 }
