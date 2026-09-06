@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/edouard-claude/linkedin-mcp/internal/domain"
 )
 
 // Environment variable names, in the order of the SPEC table.
@@ -123,13 +125,7 @@ func (c *Config) ResourceMetadataURL() string {
 // ScopeList splits LINKEDIN_SCOPES into the individual permissions, which
 // connection_status compares against what LinkedIn actually granted.
 func (c *Config) ScopeList() []string {
-	out := []string{}
-	for part := range strings.SplitSeq(c.Scopes, ",") {
-		if p := strings.TrimSpace(part); p != "" {
-			out = append(out, p)
-		}
-	}
-	return out
+	return domain.ParseScopes(c.Scopes)
 }
 
 // IsMemberAllowed reports whether a LinkedIn member id may create a tenant.

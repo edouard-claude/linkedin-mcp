@@ -66,11 +66,20 @@ type Token struct {
 	Scopes           []string
 }
 
-// ParseScopes splits the space delimited scope string LinkedIn returns.
+// ParseScopes splits a scope list, accepting either separator LinkedIn uses.
+//
+// The authorization dialog takes them space delimited, as OAuth specifies,
+// but the token introspection endpoint answers with commas. Reading only one
+// of the two turns the whole list into a single nonsense scope, and every
+// permission check then fails on an account that has the permission.
 func ParseScopes(raw string) []string {
 	out := []string{}
-	for _, s := range strings.Fields(raw) {
-		out = append(out, s)
+	for _, s := range strings.FieldsFunc(raw, func(r rune) bool {
+		return r == ',' || r == ' ' || r == '\t' || r == '\n' || r == '\r'
+	}) {
+		if s != "" {
+			out = append(out, s)
+		}
 	}
 	return out
 }
