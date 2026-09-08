@@ -26,6 +26,7 @@ import (
 	"github.com/edouard-claude/linkedin-mcp/internal/adapters/sqlite"
 	"github.com/edouard-claude/linkedin-mcp/internal/app"
 	"github.com/edouard-claude/linkedin-mcp/internal/config"
+	"github.com/edouard-claude/linkedin-mcp/web"
 )
 
 const (
@@ -119,6 +120,7 @@ func run() error {
 		Token:                     auth.TokenHandler(),
 		LinkedInLogin:             handlers.LoginHandler(),
 		LinkedInCallback:          handlers.CallbackHandler(),
+		Icon:                      web.IconHandler(),
 		Privacy:                   handlers.PrivacyHandler(),
 		MCP:                       mcpHandler,
 		LoopbackRelay:             relayHandler(cfg, logger),

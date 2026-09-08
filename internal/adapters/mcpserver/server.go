@@ -31,10 +31,20 @@ type deps struct {
 func New(svc *app.Service, logger *slog.Logger) *mcp.Server {
 	d := &deps{svc: svc, logger: logger}
 
+	// The icon and the website travel in serverInfo, which is how a client
+	// shows this server as itself rather than as a generic entry. Both are
+	// absolute URLs served by this same binary, so they resolve wherever it
+	// is deployed.
 	srv := mcp.NewServer(&mcp.Implementation{
-		Name:    serverName,
-		Version: serverVersion,
-		Title:   serverTitle,
+		Name:       serverName,
+		Version:    serverVersion,
+		Title:      serverTitle,
+		WebsiteURL: svc.PublicURL(),
+		Icons: []mcp.Icon{{
+			Source:   svc.PublicURL() + "/icon.png",
+			MIMEType: "image/png",
+			Sizes:    []string{"512x512"},
+		}},
 	}, &mcp.ServerOptions{Instructions: instructions})
 
 	d.registerResources(srv)

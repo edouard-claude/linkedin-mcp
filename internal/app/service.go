@@ -169,3 +169,7 @@ func (s *Service) ReconnectURL(ctx context.Context) (string, error) {
 	}
 	return s.publicURL + "/linkedin/login?state=" + state, nil
 }
+
+// PublicURL is this server's base URL. The MCP layer needs it to advertise
+// absolute links, an icon among them.
+func (s *Service) PublicURL() string { return s.publicURL }

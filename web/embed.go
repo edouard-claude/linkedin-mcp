@@ -13,6 +13,24 @@ import (
 //go:embed *.html
 var files embed.FS
 
+//go:embed icon.png
+var icon []byte
+
+// Icon is the server's own icon, advertised over MCP and served on /icon.png.
+// It ships inside the binary so a client can always fetch it, whatever the
+// deployment.
+func Icon() []byte { return icon }
+
+// IconHandler serves the icon. It is immutable for the life of a build, so it
+// is cached hard.
+func IconHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
+		_, _ = w.Write(icon)
+	})
+}
+
 // Page names, matching the template files.
 const (
 	PageError       = "error.html"

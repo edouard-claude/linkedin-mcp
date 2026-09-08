@@ -29,6 +29,8 @@ type Handlers struct {
 	LinkedInLogin    http.Handler
 	LinkedInCallback http.Handler
 	Privacy          http.Handler
+	// Icon serves the server's own icon, the one advertised over MCP.
+	Icon http.Handler
 
 	MCP http.Handler
 
@@ -62,6 +64,7 @@ func New(h Handlers, logger *slog.Logger) http.Handler {
 	mount(mux, "GET /linkedin/login", h.LinkedInLogin)
 	mount(mux, "GET /linkedin/callback", h.LinkedInCallback)
 	mount(mux, "GET /privacy", h.Privacy)
+	mount(mux, "GET /icon.png", h.Icon)
 	mount(mux, "GET /relay/callback", h.LoopbackRelay)
 
 	if h.MCP != nil {
